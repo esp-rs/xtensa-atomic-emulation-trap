@@ -79,7 +79,7 @@ unsafe fn __exception(cause: ExceptionCause, save_frame: &mut Context) {
     }
 }
 
-#[link_section = ".rwtext"]
+#[inline(always)]
 pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     let pc = save_frame.PC;
 
