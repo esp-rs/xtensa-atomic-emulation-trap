@@ -6,8 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-xtensa-lx-rt = { version = "0.11.0", path = "/Users/mabez/Development/rust/embedded/projects/xtensa-lx-rt" }
-
-[features]
-default = ["esp32s2"] # TODO remove after debugging
-esp32s2 = ["xtensa-lx-rt/esp32s2"]
+xtensa-lx-rt = "0.11.0"
+log = "0.4.17"

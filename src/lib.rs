@@ -1,18 +1,19 @@
+//! Xtensa atomic emulation trap handler
+//! 
+//! Only one atomic instruction to emulate on Xtensa arch, `S32C1I`.
+//! Compare values are written to the `SCOMPARE1` (Special Reg No. 12) register, 
+//! but on chips without this feature it won't exist.
+//! We need to emulate the instruction and the register for sucessful atomic emulation.
+//!
+//! See 4.3.14.2 of the ISA RM for an example atomic compare swap loop
+//!
+//! | Instruction  | Format |    Instruction composition    |
+//! | WSR          | RSR    | 0001_0011_0000_0000_0000_0000 |
+//! | S32C1I       | RRI8   | XXXX_XXXX_1110_XXXX_XXXX_0010 |
+
 #![no_std]
 
 use xtensa_lx_rt::exception::{Context, ExceptionCause};
-
-use core::fmt::Write;
-
-// Only one instruction to emulate, `S32C1I`
-// Compare values are written to the `SCOMPARE1` (Special Reg No. 12) register, but on chips without this feature it won't exist
-// We'll need to emulate the instruction and the register for sucessful atomic emulation
-
-// See 4.3.14.2 of the ISA RM for an example atomic compare swap loop
-
-// Instruction  | Format  
-// WSR          | RSR
-// S32C1I       | RRI8
 
 #[no_mangle] // TODO #[xtensa_lx_rt::exception] doesn't work
 #[link_section = ".rwtext"]
@@ -23,12 +24,11 @@ unsafe fn __exception(cause: ExceptionCause, save_frame: &mut Context) {
             return;
         },
         _ => {
-            // todo!("Allow a custom execption forwarding here")
+            // TODO allow custom exception fowarding here
         }
     }
 
-    write!(Uart, "ERROR unrecoverable exception").ok();
-
+    // TODO remove
     loop {
     }
 }
@@ -37,17 +37,14 @@ const SCOMPARE1_SR: usize = 12;
 
 static mut SCOMPARE1: u32 = 0;
 
-pub fn test_print() {
-    writeln!(Uart, "About to deref").ok();
+pub fn test_print() { // TODO remove
 }
 
 #[link_section = ".rwtext"]
 pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
-    writeln!(Uart, "About to deref = {}", save_frame.PC).ok();
-    // deref the addr to find the instruction we trapped on.
-   
     let pc = save_frame.PC;
 
+    // deref the addr to find the instruction we trapped on.
     // if the PC address isn't word aligned, we need to read two words and capture the relevant instruction
     let insn = if pc % 4 != 0 {
         let prev_aligned = pc & !0x3;
@@ -61,17 +58,16 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
         *(pc as *const usize)
     };
 
-    writeln!(Uart, "Instruction (word): {}", insn).ok();
+    log::info!("Instruction: {:#024b}", insn);
 
     // first check, is it a WSR instruction? RRR Format
     if (insn & 0b11111111_000000000000_1111) == 0b00010011_000000000000_0000 {
         let target = (insn >> 4) & 0b1111;
         let sr = (insn >> 8) & 0b11111111;
-        // writeln!(Uart, "Emulating WSR, target reg = {}, special reg = {}, value = {}", target, sr, register_value_from_index(target, save_frame)).ok();
+        log::info!("Emulating WSR, target reg = {}, special reg = {}, value = {}", target, sr, register_value_from_index(target, save_frame));
         if sr == SCOMPARE1_SR { // is the dest register SCOMPARE1
-            // write the source _value_ into our emulated SCOMPARE1
             let target_value = register_value_from_index(target, save_frame);
-            writeln!(Uart, "Writing {} to SCOMPARE1 register", target_value).ok();
+            log::info!("Writing {} to SCOMPARE1 register", target_value);
             SCOMPARE1 = target_value;
             return true
         }
@@ -90,11 +86,7 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
 
         let source_address = source_value; // TODO use offset when not zero
 
-        // writeln!(Uart, "E S32, target = {}, source = {}, offset = {}", target_value, source_value, offset).ok();
-
         let memory_value = *(source_address as *const u32);
-
-        writeln!(Uart, "E S32, mem value = {}, scompare: {}", memory_value, SCOMPARE1).ok();
 
         if memory_value == SCOMPARE1 {
             *(source_address as *mut u32) = target_value;
@@ -109,22 +101,8 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     false
 }
 
-extern "C" {
-    fn uart_tx_one_char(c: u8);
-}
 
-struct Uart;
-
-impl core::fmt::Write for Uart {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        s.as_bytes().iter().for_each(|&c| unsafe { uart_tx_one_char(c) });
-
-        Ok(())
-    }
-}
-
-
-fn register_value_from_index(index: usize, save_frame: &Context) -> u32{
+fn register_value_from_index(index: usize, save_frame: &Context) -> u32 {
     match index {
         0 => save_frame.A0,
         1 => save_frame.A1,
@@ -142,7 +120,7 @@ fn register_value_from_index(index: usize, save_frame: &Context) -> u32{
         13 => save_frame.A13,
         14 => save_frame.A14,
         15 => save_frame.A15,
-        _ => unreachable!()
+        _ => unreachable!() // TODO change to abort to remove fmt bloat
     }
 }
 
