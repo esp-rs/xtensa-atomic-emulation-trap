@@ -8,8 +8,10 @@
 //! See 4.3.14.2 of the ISA RM for an example atomic compare swap loop
 //!
 //! | Instruction  | Format |    Instruction composition    |
+//! | ------------ | ------ | ----------------------------- |
 //! | WSR          | RSR    | 0001_0011_0000_0000_0000_0000 |
 //! | S32C1I       | RRI8   | XXXX_XXXX_1110_XXXX_XXXX_0010 |
+//! 
 
 #![no_std]
 
@@ -65,7 +67,7 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
         let target = (insn >> 4) & 0b1111;
         let sr = (insn >> 8) & 0b11111111;
         log::info!("Emulating WSR, target reg = {}, special reg = {}, value = {}", target, sr, register_value_from_index(target, save_frame));
-        if sr == SCOMPARE1_SR { // is the dest register SCOMPARE1
+        if sr == SCOMPARE1_SR { // is the dest register SCOMPARE1?
             let target_value = register_value_from_index(target, save_frame);
             log::info!("Writing {} to SCOMPARE1 register", target_value);
             SCOMPARE1 = target_value;
