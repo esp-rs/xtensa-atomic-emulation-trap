@@ -55,6 +55,7 @@
 #![no_std]
 
 use xtensa_lx_rt::exception::{Context, ExceptionCause};
+use core::hint::unreachable_unchecked;
 
 const SCOMPARE1_SR: usize = 12;
 
@@ -65,7 +66,7 @@ static mut SCOMPARE1: u32 = 0;
 unsafe fn __exception(cause: ExceptionCause, save_frame: &mut Context) {
     match cause {
         ExceptionCause::Illegal if atomic_emulation(save_frame) => {
-            save_frame.PC += 3; // 24bit instructions
+            save_frame.PC += 3; // 24bit instruction
             return;
         },
         _ => {
@@ -96,16 +97,14 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
         *(pc as *const usize)
     };
 
-    log::info!("Instruction: {:#024b}", insn);
+    // log::info!("Instruction: {:#024b}", insn);
 
     // first check, is it a WSR instruction? RRR Format
     if (insn & 0b11111111_000000000000_1111) == 0b00010011_000000000000_0000 {
         let target = (insn >> 4) & 0b1111;
         let sr = (insn >> 8) & 0b11111111;
-        log::info!("Emulating WSR, target reg = {}, special reg = {}, value = {}", target, sr, register_value_from_index(target, save_frame));
         if sr == SCOMPARE1_SR { // is the dest register SCOMPARE1?
             let target_value = register_value_from_index(target, save_frame);
-            log::info!("Writing {} to SCOMPARE1 register", target_value);
             SCOMPARE1 = target_value;
             return true
         }
@@ -160,7 +159,7 @@ fn register_value_from_index(index: usize, save_frame: &Context) -> u32 {
         13 => save_frame.A13,
         14 => save_frame.A14,
         15 => save_frame.A15,
-        _ => unreachable!() // TODO change to abort to remove fmt bloat
+        _ => unsafe { unreachable_unchecked() }
     }
 }
 
@@ -182,6 +181,6 @@ fn register_value_mut_from_index(index: usize, save_frame: &mut Context) -> &mut
         13 => &mut save_frame.A13,
         14 => &mut save_frame.A14,
         15 => &mut save_frame.A15,
-        _ => unreachable!()
+        _ => unsafe { unreachable_unchecked() }
     }
 }

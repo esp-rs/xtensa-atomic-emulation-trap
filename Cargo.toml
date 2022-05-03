@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 xtensa-lx-rt = "0.11.0"
-log = "0.4.17"
