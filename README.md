@@ -46,10 +46,10 @@ However, compare values are written to the `SCOMPARE1` (Special Reg No. 12) regi
 
 See 4.3.14.2 of the ISA RM for an example atomic compare swap loop.
 
-| Instruction  | Format |    Instruction composition    |
-| ------------ | ------ | ----------------------------- |
-| WSR          | RSR    | 0001_0011_0000_0000_0000_0000 |
-| S32C1I       | RRI8   | XXXX_XXXX_1110_XXXX_XXXX_0010 |
+| Instruction  | Format |    Instruction composition      |
+| ------------ | ------ | ------------------------------- |
+| WSR          | RSR    | `0001_0011_0000_0000_0000_0000` |
+| S32C1I       | RRI8   | `XXXX_XXXX_1110_XXXX_XXXX_0010` |
 
 To emulate the WSR instruction, we must first decode it and verify that the target register is 12, the `SCOMPARE1` register. Once that is confirmed, we can use this crates virtual `SCOMPARE1` to store the value.
 
