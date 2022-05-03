@@ -77,20 +77,22 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
 
     // next check, is it the S32C1I instruction? RRI8 Format
     if (insn & 0b1111_00000000_1111) == 0b1110_00000000_0010 {
+        // decode the instruction
         let reg_mask = 0b1111;
         let target = (insn >> 4) & reg_mask;
         let source = (insn >> 8) & reg_mask;
         let offset = (insn >> 16) & 0b11111111;
 
+        // get target value and source value (memory address)
         let target_value = register_value_from_index(target, save_frame);
         let source_value = register_value_from_index(source, save_frame);
-        // let source_address = source_value + ((offset as u32) << 2);
 
-        let source_address = source_value; // TODO use offset when not zero
-
+        // get the value from memory
+        let source_address = source_value + ((offset as u32) << 2);
         let memory_value = *(source_address as *const u32);
 
         if memory_value == SCOMPARE1 {
+            // update the value in memory
             *(source_address as *mut u32) = target_value;
         }
 
