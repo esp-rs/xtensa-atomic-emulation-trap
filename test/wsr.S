@@ -1,1 +1,0 @@
-wsr a0, SCOMPARE1
