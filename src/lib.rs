@@ -7,6 +7,12 @@ use core::hint::unreachable_unchecked;
 
 const SCOMPARE1_SR: usize = 12;
 
+const WSR_INSTRUCTION: usize = 0b00010011_000000000000_0000;
+const WSR_INSTRUCTION_MASK: usize = 0b11111111_000000000000_1111;
+
+const S32C1I_INSTRUCTION: usize = 0b1110_00000000_0010;
+const S32C1I_INSTRUCTION_MASK: usize = 0b1111_00000000_1111;
+
 static mut SCOMPARE1: u32 = 0;
 
 #[no_mangle] // TODO #[xtensa_lx_rt::exception] doesn't work
@@ -48,7 +54,7 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     // log::info!("Instruction: {:#024b}", insn);
 
     // first check, is it a WSR instruction? RRR Format
-    if (insn & 0b11111111_000000000000_1111) == 0b00010011_000000000000_0000 {
+    if (insn & WSR_INSTRUCTION_MASK) == WSR_INSTRUCTION {
         let target = (insn >> 4) & 0b1111;
         let sr = (insn >> 8) & 0b11111111;
         if sr == SCOMPARE1_SR { // is the dest register SCOMPARE1?
@@ -59,7 +65,7 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     }
 
     // next check, is it the S32C1I instruction? RRI8 Format
-    if (insn & 0b1111_00000000_1111) == 0b1110_00000000_0010 {
+    if (insn & S32C1I_INSTRUCTION_MASK) == S32C1I_INSTRUCTION {
         // decode the instruction
         let reg_mask = 0b1111;
         let target = (insn >> 4) & reg_mask;
