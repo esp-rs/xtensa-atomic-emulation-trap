@@ -2,40 +2,32 @@
 
 ## Usage
 
-### The target
+### Additional RUSTFLAGS
 
-You'll need to modify your target to enable the xtensa atomic feature, `s32c1i`.
+Add the following rustflags to `.cargo/config.toml` in your project. Take care not to overwrite any existing ones.
 
-Example target json for the esp32s2, which doesn't have hardward atomic CAS:
+```toml
+rustflags = [
+# enable the atomic codegen option for Xtensa
+"-C", "target-feature=+s32c1i",
 
-```jsonc
-// esp32s2-atomic.json
-{
-   "arch": "xtensa",
-   "cpu": "esp32-s2",
-   "data-layout": "e-m:e-p:32:32-i8:8:32-i16:16:32-i64:64-n32",
-   "emit-debug-gdb-scripts": false,
-   "executables": true,
-   "features": "+s32c1i", // <-- Explicitly enable the atomic feature of Xtensa silicon
-   "linker": "xtensa-esp32s2-elf-gcc",
-   "llvm-target": "xtensa-none-elf",
-   "panic-strategy": "abort",
-   "relocation-model": "static",
-   "target-pointer-width": "32",
-   "max-atomic-width": 32,
-   "vendor": ""
-}
+# tell the core library have atomics even though it's not specified in the target definition
+"--cfg", 'target_has_atomic="8"',
+"--cfg", 'target_has_atomic="16"',
+"--cfg", 'target_has_atomic="32"',
+"--cfg", 'target_has_atomic="ptr"',
+]
 ```
 
 ### Building
 
-Include this crate somewhere in your code:
+Include this line of code somewhere in `main.rs`
 
 ```rust
 use xtensa_atomic_emulation_trap as _;
 ```
 
-Then just build with `--target esp32s2-atomic.json` instead of the usual target.
+and build the project. The `core::sync::atomic` API will now be available. 
 
 ## How it works
 
