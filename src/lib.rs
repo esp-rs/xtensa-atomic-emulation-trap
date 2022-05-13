@@ -15,25 +15,28 @@ const S32C1I_INSTRUCTION_MASK: usize = 0b1111_00000000_1111;
 
 static mut SCOMPARE1: u32 = 0;
 
-#[no_mangle] // TODO #[xtensa_lx_rt::exception] doesn't work
+extern "C" {
+    /// This symbol will be provided by the user via `#[xtensa_lx_rt::exception]`
+    fn __user_exception(cause: ExceptionCause, save_frame: &mut Context);
+}
+
 #[link_section = ".rwtext"]
-unsafe fn __exception(cause: ExceptionCause, save_frame: &mut Context) {
+#[export_name = "__exception"] // this overrides the exception handler in xtensa_lx_rt
+#[link_section = ".rwtext"]
+unsafe fn exception(cause: ExceptionCause, save_frame: &mut Context) {
     match cause {
         ExceptionCause::Illegal if atomic_emulation(save_frame) => {
             save_frame.PC += 3; // 24bit instruction
             return;
         },
         _ => {
-            // TODO allow custom exception fowarding here
+            __user_exception(cause, save_frame)
         }
-    }
-
-    // TODO remove
-    loop {
     }
 }
 
 #[inline(always)]
+#[link_section = ".rwtext"]
 pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     let pc = save_frame.PC;
 

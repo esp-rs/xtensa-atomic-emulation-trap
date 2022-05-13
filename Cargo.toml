@@ -6,4 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-xtensa-lx-rt = "0.11.0"
+xtensa-lx-rt = { version = "0.11.0", git = "https://github.com/esp-rs/xtensa-lx-rt", branch = "feature/exception-interception" }
+
+# TODO is this needed?
+[features]
+esp32   = ["xtensa-lx-rt/esp32"]
+esp32s2 = ["xtensa-lx-rt/esp32s2"]
+esp32s3 = ["xtensa-lx-rt/esp32s3"]
+esp8266 = ["xtensa-lx-rt/esp8266"]

@@ -52,3 +52,12 @@ Emulation of the `S32C1I` instruction is a little more complicated. First we dec
 - `offset` - optional offset to add to the address in the source register
 
 We deference the `source address` + `offset` to find the current value and compare it to the stored value inside our `SCOMPARE1` virtual register. If they are equal, the new target value is written to memory at the `source address` + `offset`. Regardless of whether the new value is written the old value is always written back into the target register.
+
+## I get linker errors when I build for debug
+
+Follow the instructions [here](https://github.com/esp-rs/xtensa-lx-rt#i-get-linker-errors-when-i-build-for-debug), and also add the following.
+
+```toml
+[profile.dev.package.xtensa-atomic-emulation-trap]
+opt-level = 'z'
+```
