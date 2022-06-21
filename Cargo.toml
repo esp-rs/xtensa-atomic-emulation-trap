@@ -1,12 +1,16 @@
 [package]
 name = "xtensa-atomic-emulation-trap"
 version = "0.1.0"
+description = "An atomic emulation trap handler for non atomic Xtensa targets."
+keywords = ["Xtensa", "emulation", "atomic"]
+authors = ["Scott Mabin <scott@mabez.dev>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/esp-rs/xtensa-atomic-emulation-trap"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-xtensa-lx-rt = { version = "0.11.0", git = "https://github.com/esp-rs/xtensa-lx-rt", branch = "feature/exception-interception" }
+xtensa-lx-rt = "0.12.0"
 
 # TODO is this needed?
 [features]
