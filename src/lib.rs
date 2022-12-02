@@ -20,7 +20,6 @@ extern "C" {
     fn __user_exception(cause: ExceptionCause, save_frame: &mut Context);
 }
 
-#[link_section = ".rwtext"]
 #[export_name = "__exception"] // this overrides the exception handler in xtensa_lx_rt
 #[link_section = ".rwtext"]
 unsafe fn exception(cause: ExceptionCause, save_frame: &mut Context) {

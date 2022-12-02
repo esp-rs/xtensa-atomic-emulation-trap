@@ -9,7 +9,7 @@ repository = "https://github.com/esp-rs/xtensa-atomic-emulation-trap"
 edition = "2021"
 
 [dependencies]
-xtensa-lx-rt = "0.13.0"
+xtensa-lx-rt = "0.14.0"
 
 # TODO is this needed?
 [features]
