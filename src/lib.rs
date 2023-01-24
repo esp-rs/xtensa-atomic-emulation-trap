@@ -1,17 +1,16 @@
 #![doc = include_str!("../README.md")]
-
 #![no_std]
 
-use xtensa_lx_rt::exception::{Context, ExceptionCause};
 use core::hint::unreachable_unchecked;
+use xtensa_lx_rt::exception::{Context, ExceptionCause};
 
-const SCOMPARE1_SR: usize = 12;
+const SCOMPARE1_SR: u32 = 12;
 
-const WSR_INSTRUCTION: usize = 0b00010011_000000000000_0000;
-const WSR_INSTRUCTION_MASK: usize = 0b11111111_000000000000_1111;
+const WSR_INSTRUCTION: u32 = 0b00010011_000000000000_0000;
+const WSR_INSTRUCTION_MASK: u32 = 0b11111111_000000000000_1111;
 
-const S32C1I_INSTRUCTION: usize = 0b1110_00000000_0010;
-const S32C1I_INSTRUCTION_MASK: usize = 0b1111_00000000_1111;
+const S32C1I_INSTRUCTION: u32 = 0b1110_00000000_0010;
+const S32C1I_INSTRUCTION_MASK: u32 = 0b1111_00000000_1111;
 
 static mut SCOMPARE1: u32 = 0;
 
@@ -27,10 +26,8 @@ unsafe fn exception(cause: ExceptionCause, save_frame: &mut Context) {
         ExceptionCause::Illegal if atomic_emulation(save_frame) => {
             save_frame.PC += 3; // 24bit instruction
             return;
-        },
-        _ => {
-            __user_exception(cause, save_frame)
         }
+        _ => __user_exception(cause, save_frame),
     }
 }
 
@@ -45,12 +42,18 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
         let prev_aligned = pc & !0x3;
         let offset = (pc - prev_aligned) as usize;
 
-        let buffer = (*((prev_aligned + 4) as *const u32) as u64) << 32 | (*(prev_aligned as *const u32) as u64); // read two words
+        let buffer = (*((prev_aligned + 4) as *const u32) as u64) << 32
+            | (*(prev_aligned as *const u32) as u64); // read two words
         let buffer_bytes = buffer.to_le_bytes();
 
-        usize::from_le_bytes([buffer_bytes[offset], buffer_bytes[offset + 1], buffer_bytes[offset + 2], 0])
+        u32::from_le_bytes([
+            buffer_bytes[offset],
+            buffer_bytes[offset + 1],
+            buffer_bytes[offset + 2],
+            0,
+        ])
     } else {
-        *(pc as *const usize)
+        *(pc as *const u32)
     };
 
     // log::info!("Instruction: {:#024b}", insn);
@@ -59,10 +62,11 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     if (insn & WSR_INSTRUCTION_MASK) == WSR_INSTRUCTION {
         let target = (insn >> 4) & 0b1111;
         let sr = (insn >> 8) & 0b11111111;
-        if sr == SCOMPARE1_SR { // is the dest register SCOMPARE1?
+        if sr == SCOMPARE1_SR {
+            // is the dest register SCOMPARE1?
             let target_value = register_value_from_index(target, save_frame);
             SCOMPARE1 = target_value;
-            return true
+            return true;
         }
     }
 
@@ -96,8 +100,7 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
     false
 }
 
-
-fn register_value_from_index(index: usize, save_frame: &Context) -> u32 {
+fn register_value_from_index(index: u32, save_frame: &Context) -> u32 {
     match index {
         0 => save_frame.A0,
         1 => save_frame.A1,
@@ -115,11 +118,11 @@ fn register_value_from_index(index: usize, save_frame: &Context) -> u32 {
         13 => save_frame.A13,
         14 => save_frame.A14,
         15 => save_frame.A15,
-        _ => unsafe { unreachable_unchecked() }
+        _ => unsafe { unreachable_unchecked() },
     }
 }
 
-fn register_value_mut_from_index(index: usize, save_frame: &mut Context) -> &mut u32 {
+fn register_value_mut_from_index(index: u32, save_frame: &mut Context) -> &mut u32 {
     match index {
         0 => &mut save_frame.A0,
         1 => &mut save_frame.A1,
@@ -137,6 +140,6 @@ fn register_value_mut_from_index(index: usize, save_frame: &mut Context) -> &mut
         13 => &mut save_frame.A13,
         14 => &mut save_frame.A14,
         15 => &mut save_frame.A15,
-        _ => unsafe { unreachable_unchecked() }
+        _ => unsafe { unreachable_unchecked() },
     }
 }
