@@ -2,7 +2,7 @@
 name = "xtensa-atomic-emulation-trap"
 version = "0.3.0"
 description = "An atomic emulation trap handler for non atomic Xtensa targets."
-keywords = ["Xtensa", "emulation", "atomic"]
+keywords = ["xtensa", "emulation", "atomic"]
 authors = ["Scott Mabin <scott@mabez.dev>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/esp-rs/xtensa-atomic-emulation-trap"
@@ -11,9 +11,6 @@ edition = "2021"
 [dependencies]
 xtensa-lx-rt = "0.14.0"
 
-# TODO is this needed?
 [features]
-esp32   = ["xtensa-lx-rt/esp32"]
 esp32s2 = ["xtensa-lx-rt/esp32s2"]
-esp32s3 = ["xtensa-lx-rt/esp32s3"]
 esp8266 = ["xtensa-lx-rt/esp8266"]
