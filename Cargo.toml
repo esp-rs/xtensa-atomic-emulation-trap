@@ -8,6 +8,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/esp-rs/xtensa-atomic-emulation-trap"
 edition = "2021"
 
+[package.metadata.docs.rs]
+features = "esp32s2"
+
 [dependencies]
 xtensa-lx-rt = "0.14.0"
 
