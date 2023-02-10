@@ -19,15 +19,7 @@ rustflags = [
 ]
 ```
 
-### Building
-
-Include this line of code somewhere in `main.rs`
-
-```rust
-use xtensa_atomic_emulation_trap as _;
-```
-
-and build the project. The `core::sync::atomic` API will now be available. 
+and then call `atomic_emulation` in the exception handler.
 
 ## How it works
 
@@ -52,6 +44,10 @@ Emulation of the `S32C1I` instruction is a little more complicated. First we dec
 - `offset` - optional offset to add to the address in the source register
 
 We deference the `source address` + `offset` to find the current value and compare it to the stored value inside our `SCOMPARE1` virtual register. If they are equal, the new target value is written to memory at the `source address` + `offset`. Regardless of whether the new value is written the old value is always written back into the target register.
+
+## Usage with xtensa_lx_rt
+
+An example of how to use this crate with xtensa-lx-rt can be found in [v0.3.1](https://github.com/esp-rs/xtensa-atomic-emulation-trap/tree/5b90a6073a2ed971915856652cf0ff1cdff112d0).
 
 ## I get linker errors when I build for debug
 

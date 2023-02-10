@@ -1,8 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
 
-use core::hint::unreachable_unchecked;
-use xtensa_lx_rt::exception::{Context, ExceptionCause};
+pub const PLATFORM_REGISTER_LEN: usize = 16;
 
 const SCOMPARE1_SR: u32 = 12;
 
@@ -14,28 +13,9 @@ const S32C1I_INSTRUCTION_MASK: u32 = 0b1111_00000000_1111;
 
 static mut SCOMPARE1: u32 = 0;
 
-extern "C" {
-    /// This symbol will be provided by the user via `#[xtensa_lx_rt::exception]`
-    fn __user_exception(cause: ExceptionCause, save_frame: &mut Context);
-}
-
-#[export_name = "__exception"] // this overrides the exception handler in xtensa_lx_rt
-#[link_section = ".rwtext"]
-unsafe fn exception(cause: ExceptionCause, save_frame: &mut Context) {
-    match cause {
-        ExceptionCause::Illegal if atomic_emulation(save_frame) => {
-            save_frame.PC += 3; // 24bit instruction
-            return;
-        }
-        _ => __user_exception(cause, save_frame),
-    }
-}
-
 #[inline(always)]
 #[link_section = ".rwtext"]
-pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
-    let pc = save_frame.PC;
-
+pub unsafe fn atomic_emulation(pc: u32, save_frame: &mut [u32; PLATFORM_REGISTER_LEN]) -> bool {
     // deref the addr to find the instruction we trapped on.
     // if the PC address isn't word aligned, we need to read two words and capture the relevant instruction
     let insn = if pc % 4 != 0 {
@@ -56,16 +36,14 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
         *(pc as *const u32)
     };
 
-    // log::info!("Instruction: {:#024b}", insn);
-
     // first check, is it a WSR instruction? RRR Format
     if (insn & WSR_INSTRUCTION_MASK) == WSR_INSTRUCTION {
         let target = (insn >> 4) & 0b1111;
         let sr = (insn >> 8) & 0b11111111;
+        // is the dest register SCOMPARE1?
         if sr == SCOMPARE1_SR {
-            // is the dest register SCOMPARE1?
-            let target_value = register_value_from_index(target, save_frame);
-            SCOMPARE1 = target_value;
+            // save value in our virtual register
+            SCOMPARE1 = save_frame[target as usize];
             return true;
         }
     }
@@ -79,8 +57,8 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
         let offset = (insn >> 16) & 0b11111111;
 
         // get target value and source value (memory address)
-        let target_value = register_value_from_index(target, save_frame);
-        let source_value = register_value_from_index(source, save_frame);
+        let target_value = save_frame[target as usize];
+        let source_value = save_frame[source as usize];
 
         // get the value from memory
         let source_address = source_value + ((offset as u32) << 2);
@@ -91,55 +69,10 @@ pub unsafe fn atomic_emulation(save_frame: &mut Context) -> bool {
             *(source_address as *mut u32) = target_value;
         }
 
-        let target_value_mut = register_value_mut_from_index(target, save_frame);
-        *target_value_mut = memory_value;
+        save_frame[target as usize] = memory_value;
 
         return true;
     }
 
     false
-}
-
-fn register_value_from_index(index: u32, save_frame: &Context) -> u32 {
-    match index {
-        0 => save_frame.A0,
-        1 => save_frame.A1,
-        2 => save_frame.A2,
-        3 => save_frame.A3,
-        4 => save_frame.A4,
-        5 => save_frame.A5,
-        6 => save_frame.A6,
-        7 => save_frame.A7,
-        8 => save_frame.A8,
-        9 => save_frame.A9,
-        10 => save_frame.A10,
-        11 => save_frame.A11,
-        12 => save_frame.A12,
-        13 => save_frame.A13,
-        14 => save_frame.A14,
-        15 => save_frame.A15,
-        _ => unsafe { unreachable_unchecked() },
-    }
-}
-
-fn register_value_mut_from_index(index: u32, save_frame: &mut Context) -> &mut u32 {
-    match index {
-        0 => &mut save_frame.A0,
-        1 => &mut save_frame.A1,
-        2 => &mut save_frame.A2,
-        3 => &mut save_frame.A3,
-        4 => &mut save_frame.A4,
-        5 => &mut save_frame.A5,
-        6 => &mut save_frame.A6,
-        7 => &mut save_frame.A7,
-        8 => &mut save_frame.A8,
-        9 => &mut save_frame.A9,
-        10 => &mut save_frame.A10,
-        11 => &mut save_frame.A11,
-        12 => &mut save_frame.A12,
-        13 => &mut save_frame.A13,
-        14 => &mut save_frame.A14,
-        15 => &mut save_frame.A15,
-        _ => unsafe { unreachable_unchecked() },
-    }
 }
